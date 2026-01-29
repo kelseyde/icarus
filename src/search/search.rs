@@ -60,6 +60,7 @@ pub fn search<Node: NodeType>(
     ply: u16,
     mut alpha: Score,
     beta: Score,
+    cutnode: bool,
     thread: &mut ThreadCtx,
 ) -> Score {
     if !Node::ROOT && (thread.abort_now || thread.global.time_manager.stop_search(&thread.nodes)) {
@@ -148,6 +149,7 @@ pub fn search<Node: NodeType>(
                 ply + 1,
                 -beta,
                 -beta + 1,
+                !cutnode,
                 thread,
             );
             pos.unmake_null_move();
@@ -239,17 +241,18 @@ pub fn search<Node: NodeType>(
 
         // PVS
         if moves_seen == 0 {
-            score = -search::<Node::Next>(pos, new_depth, ply + 1, -beta, -alpha, thread);
+            score = -search::<Node::Next>(pos, new_depth, ply + 1, -beta, -alpha, false, thread);
         } else {
-            let lmr_depth = (new_depth - lmr).max(1).min(new_depth);
+            let mut lmr_depth = (new_depth - lmr).max(1).min(new_depth);
+            lmr_depth -= cutnode as i16;
 
-            score = -search::<NonPV>(pos, lmr_depth, ply + 1, -alpha - 1, -alpha, thread);
+            score = -search::<NonPV>(pos, lmr_depth, ply + 1, -alpha - 1, -alpha, true, thread);
 
             if lmr > 0 && score > alpha {
-                score = -search::<NonPV>(pos, new_depth, ply + 1, -alpha - 1, -alpha, thread)
+                score = -search::<NonPV>(pos, new_depth, ply + 1, -alpha - 1, -alpha, !cutnode, thread)
             }
             if Node::PV && score > alpha {
-                score = -search::<PV>(pos, new_depth, ply + 1, -beta, -alpha, thread);
+                score = -search::<PV>(pos, new_depth, ply + 1, -beta, -alpha, false, thread);
             }
         }
 
