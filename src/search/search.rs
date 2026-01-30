@@ -257,7 +257,7 @@ pub fn search<Node: NodeType>(
             let s_depth = (depth - 1) / 2;
 
             thread.search_stack[ply as usize].singular = Some(mv);
-            let score = search::<NonPV>(pos, s_depth, ply, s_beta - 1, s_beta, !cutnode, thread);
+            let score = search::<NonPV>(pos, s_depth, ply, s_beta - 1, s_beta, cutnode, thread);
             thread.search_stack[ply as usize].singular = None;
 
             if score < s_beta {
