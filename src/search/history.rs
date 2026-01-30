@@ -42,12 +42,15 @@ impl History {
     pub fn score_quiet(&self, pos: &Position, mv: Move) -> i16 {
         let board = pos.board();
         let prev = pos.prev_move(1);
-        self.quiet[board.stm()][mv.from()][board.attacked().contains(mv.from()) as usize][mv.to()]
-            [board.attacked().contains(mv.to()) as usize]
-            + prev.map_or(0, |prev| {
-                self.cont_oneply[board.stm()][prev.0][prev.1.to()]
-                    [board.piece_on(mv.from()).unwrap()][mv.to()]
-            })
+        let from_threatened = board.attacked().contains(mv.from());
+        let to_threatened = board.attacked().contains(mv.to());
+        let quiet_score =
+            self.quiet[board.stm()][mv.from()][from_threatened as usize][mv.to()][to_threatened as usize];
+        let cont_score = prev.map_or(0, |prev| {
+            self.cont_oneply[board.stm()][prev.0][prev.1.to()]
+                [board.piece_on(mv.from()).unwrap()][mv.to()]
+        });
+        quiet_score.saturating_add(cont_score)
     }
 
     pub fn score_tactic(&self, board: &Board, mv: Move) -> i16 {
